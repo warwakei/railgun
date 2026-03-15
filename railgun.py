@@ -726,16 +726,16 @@ class Railgun:
                 return
             
             import re
-            apks = re.findall(r'href=["\']([^"\']*\.apk)["\']', result.stdout)
+            files = re.findall(r'href=["\']([^"\']*\.(?:apk|apkm|apks|xapk))["\']', result.stdout)
             
-            if not apks:
+            if not files:
                 console.print("[-] No apps found in repository", style="red")
                 input("\nPress Enter...")
                 return
             
             choice = questionary.select(
                 "Railgun Repository",
-                choices=apks + ["Back"],
+                choices=files + ["Back"],
                 pointer="➜"
             ).ask()
             
@@ -748,16 +748,45 @@ class Railgun:
             result = subprocess.run(
                 ['curl', '-L', '-o', choice, download_url],
                 capture_output=True,
-                timeout=60
+                timeout=120
             )
             
             if result.returncode == 0 and os.path.exists(choice):
-                console.print(f"[*] Installing {choice}...", style="yellow")
-                if self.install_app(choice):
-                    console.print("[+] Installed successfully", style="green")
-                    os.remove(choice)
+                if choice.endswith('.apkm') or choice.endswith('.apks') or choice.endswith('.xapk'):
+                    console.print(f"[*] Extracting {choice}...", style="yellow")
+                    import zipfile
+                    import tempfile
+                    
+                    with tempfile.TemporaryDirectory() as tmpdir:
+                        try:
+                            with zipfile.ZipFile(choice, 'r') as zip_ref:
+                                zip_ref.extractall(tmpdir)
+                            
+                            apks = [f for f in os.listdir(tmpdir) if f.endswith('.apk')]
+                            
+                            if apks:
+                                console.print(f"[*] Installing {len(apks)} APK(s)...", style="yellow")
+                                cmd = [self.adb_path, '-s', self.device, 'install-multiple'] + [os.path.join(tmpdir, apk) for apk in apks]
+                                result = subprocess.run(cmd, capture_output=True, timeout=120)
+                                
+                                if result.returncode == 0:
+                                    console.print("[+] Installed successfully", style="green")
+                                else:
+                                    console.print("[-] Installation failed", style="red")
+                            else:
+                                console.print("[-] No APK files found in archive", style="red")
+                        except Exception as e:
+                            console.print(f"[-] Extraction failed: {e}", style="red")
+                        finally:
+                            os.remove(choice)
                 else:
-                    console.print("[-] Installation failed", style="red")
+                    console.print(f"[*] Installing {choice}...", style="yellow")
+                    if self.install_app(choice):
+                        console.print("[+] Installed successfully", style="green")
+                        os.remove(choice)
+                    else:
+                        console.print("[-] Installation failed", style="red")
+                
                 input("\nPress Enter...")
             else:
                 console.print("[-] Download failed", style="red")
