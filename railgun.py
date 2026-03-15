@@ -712,6 +712,12 @@ class Railgun:
         """Show Railgun Repository apps"""
         console.print("\n[*] Fetching Railgun Repository...", style="yellow")
         
+        app_names = {
+            'com.lemon.lvoverseas': 'lemon - CapCut',
+            'com.reddit.frontpage': 'reddit - Reddit',
+            'org.mozilla.fenix': 'mozilla - Firefox Nightly'
+        }
+        
         files = []
         
         # Try GitHub API first
@@ -747,39 +753,52 @@ class Railgun:
             input("\nPress Enter...")
             return
         
+        file_to_display = {}
+        display_names = []
+        for f in files:
+            display_name = f
+            for pkg, name in app_names.items():
+                if pkg in f:
+                    display_name = name
+                    break
+            file_to_display[display_name] = f
+            display_names.append(display_name)
+        
         choice = questionary.select(
             "Railgun Repository",
-            choices=files + ["Back"],
+            choices=display_names + ["Back"],
             pointer="➜"
         ).ask()
         
         if choice == "Back" or not choice:
             return
         
+        actual_filename = file_to_display.get(choice, choice)
+        
         # Check if file is local or needs to be downloaded
-        local_path = os.path.join("apps", choice)
+        local_path = os.path.join("apps", actual_filename)
         if os.path.exists(local_path):
             file_path = local_path
             console.print(f"[*] Using local file: {choice}", style="yellow")
         else:
             console.print(f"\n[*] Downloading {choice}...", style="yellow")
-            download_url = f"https://github.com/warwakei/railgun/raw/refs/heads/main/apps/{choice}"
+            download_url = f"https://github.com/warwakei/railgun/raw/refs/heads/main/apps/{actual_filename}"
             
             result = subprocess.run(
-                ['curl', '-L', '-o', choice, download_url],
+                ['curl', '-L', '-o', actual_filename, download_url],
                 capture_output=True,
                 timeout=120
             )
             
-            if result.returncode != 0 or not os.path.exists(choice):
+            if result.returncode != 0 or not os.path.exists(actual_filename):
                 console.print("[-] Download failed", style="red")
                 input("\nPress Enter...")
                 return
             
-            file_path = choice
+            file_path = actual_filename
         
         # Install the app
-        if choice.endswith('.apkm') or choice.endswith('.apks') or choice.endswith('.xapk'):
+        if actual_filename.endswith('.apkm') or actual_filename.endswith('.apks') or actual_filename.endswith('.xapk'):
             console.print(f"[*] Extracting {choice}...", style="yellow")
             import zipfile
             import tempfile
@@ -1060,7 +1079,13 @@ class Railgun:
     
     def run(self) -> None:
         """Main entry point"""
-        if self.select_device():
+        skip_device_check = '-f' in sys.argv
+        
+        if skip_device_check:
+            console.print("[*] Skipping device check (test mode)", style="yellow")
+            self.device = "test_device"
+            self.main_menu()
+        elif self.select_device():
             if not self.alpine_installed:
                 console.clear()
                 console.print(Panel("FIRST TIME SETUP", style="bold cyan"))
