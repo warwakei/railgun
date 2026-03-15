@@ -785,13 +785,19 @@ class Railgun:
             download_url = f"https://github.com/warwakei/railgun/raw/refs/heads/main/apps/{actual_filename}"
             
             result = subprocess.run(
-                ['curl', '-L', '-o', actual_filename, download_url],
+                ['curl', '-k', '-L', '-o', actual_filename, download_url],
                 capture_output=True,
+                text=True,
                 timeout=120
             )
             
-            if result.returncode != 0 or not os.path.exists(actual_filename):
-                console.print("[-] Download failed", style="red")
+            if result.returncode != 0:
+                console.print(f"[-] Download failed: {result.stderr}", style="red")
+                input("\nPress Enter...")
+                return
+            
+            if not os.path.exists(actual_filename):
+                console.print(f"[-] File not created after download", style="red")
                 input("\nPress Enter...")
                 return
             
