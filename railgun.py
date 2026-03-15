@@ -713,9 +713,9 @@ class Railgun:
         console.print("\n[*] Fetching Railgun Repository...", style="yellow")
         
         app_names = {
-            'com.lemon.lvoverseas': 'lemon - CapCut',
-            'com.reddit.frontpage': 'reddit - Reddit',
-            'org.mozilla.fenix': 'mozilla - Firefox Nightly'
+            'com.lemon.lvoverseas': 'CapCut',
+            'com.reddit.frontpage': 'Reddit',
+            'org.mozilla.fenix': 'Firefox Nightly'
         }
         
         files = []
