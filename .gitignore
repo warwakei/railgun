@@ -34,7 +34,7 @@ env/
 Thumbs.db
 
 alpineJustInstalled
-platform-tools/
+/platform-tools/
 *.tar.gz
 !mirrors/**/*.tar.gz
 !mirrors/**/*.exe
