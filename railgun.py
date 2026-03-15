@@ -41,6 +41,7 @@ ALPINE_REPOS = [
     "http://dl-cdn.alpinelinux.org/alpine/edge/main",
     "http://dl-cdn.alpinelinux.org/alpine/edge/community",
 ]
+RAILGUN_REPO_URL = "https://raw.githubusercontent.com/warwakei/railgun/main/apps"
 
 @dataclass
 class App:
@@ -685,6 +686,7 @@ class Railgun:
                     "System Apps",
                     "All Apps",
                     "Install APK",
+                    "Railgun Repository",
                     "Back"
                 ],
                 pointer="➜"
@@ -700,9 +702,69 @@ class Railgun:
                 elif apk_path:
                     console.print("[-] Installation failed", style="red")
                     input("\nPress Enter...")
+            elif choice == "Railgun Repository":
+                self._show_railgun_repository()
             else:
                 app_type = {"User Apps": "user", "System Apps": "system", "All Apps": "all"}[choice]
                 self._show_apps_list(app_type)
+    
+    def _show_railgun_repository(self) -> None:
+        """Show Railgun Repository apps"""
+        console.print("\n[*] Fetching Railgun Repository...", style="yellow")
+        
+        try:
+            result = subprocess.run(
+                ['curl', '-s', f'{RAILGUN_REPO_URL}/'],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            
+            if result.returncode != 0:
+                console.print("[-] Failed to fetch repository", style="red")
+                input("\nPress Enter...")
+                return
+            
+            import re
+            apks = re.findall(r'href=["\']([^"\']*\.apk)["\']', result.stdout)
+            
+            if not apks:
+                console.print("[-] No apps found in repository", style="red")
+                input("\nPress Enter...")
+                return
+            
+            choice = questionary.select(
+                "Railgun Repository",
+                choices=apks + ["Back"],
+                pointer="➜"
+            ).ask()
+            
+            if choice == "Back" or not choice:
+                return
+            
+            console.print(f"\n[*] Downloading {choice}...", style="yellow")
+            download_url = f"{RAILGUN_REPO_URL}/{choice}"
+            
+            result = subprocess.run(
+                ['curl', '-L', '-o', choice, download_url],
+                capture_output=True,
+                timeout=60
+            )
+            
+            if result.returncode == 0 and os.path.exists(choice):
+                console.print(f"[*] Installing {choice}...", style="yellow")
+                if self.install_app(choice):
+                    console.print("[+] Installed successfully", style="green")
+                    os.remove(choice)
+                else:
+                    console.print("[-] Installation failed", style="red")
+                input("\nPress Enter...")
+            else:
+                console.print("[-] Download failed", style="red")
+                input("\nPress Enter...")
+        except Exception as e:
+            console.print(f"[-] Error: {e}", style="red")
+            input("\nPress Enter...")
     
     def _show_apps_list(self, app_type: str) -> None:
         """Show apps list and allow management"""
