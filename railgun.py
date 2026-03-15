@@ -80,6 +80,18 @@ class Railgun:
     
     def _download_adb(self, system: str) -> None:
         """Download ADB for the current system"""
+        local_adb_dir = Path('mirrors/platform-tools/platform-tools')
+        
+        if local_adb_dir.exists():
+            console.print("[*] Using local platform-tools mirror...", style="yellow")
+            try:
+                import shutil
+                shutil.copytree(str(local_adb_dir), 'platform-tools', dirs_exist_ok=True)
+                console.print("[+] Platform-tools copied from local mirror", style="green")
+                return
+            except Exception as e:
+                console.print(f"[-] Failed to copy from mirror: {e}", style="red")
+        
         console.print("[*] Downloading ADB...", style="yellow")
         
         urls = {
@@ -239,6 +251,19 @@ class Railgun:
             return False
     def _download_alpine(self) -> bool:
         """Download Alpine minirootfs"""
+        local_alpine = Path(f'mirrors/alpine/{ALPINE_FILENAME}')
+        
+        if local_alpine.exists():
+            console.print("[*] Using local Alpine mirror...", style="yellow")
+            try:
+                import shutil
+                shutil.copy(str(local_alpine), ALPINE_FILENAME)
+                console.print("[+] Alpine copied from local mirror", style="green")
+                self.alpine_installed = True
+                return True
+            except Exception as e:
+                console.print(f"[-] Failed to copy from mirror: {e}", style="red")
+        
         console.print("\n[*] Downloading Alpine minirootfs 3.23.3 aarch64...", style="yellow")
         
         try:
@@ -836,10 +861,11 @@ class Railgun:
             console.print(f"[*] Installing {choice}...", style="yellow")
             if self.install_app(file_path):
                 console.print("[+] Installed successfully", style="green")
-                if file_path != local_path and os.path.exists(file_path):
-                    os.remove(file_path)
             else:
                 console.print("[-] Installation failed", style="red")
+            
+            if file_path != local_path and os.path.exists(file_path):
+                os.remove(file_path)
         
         input("\nPress Enter...")
     
