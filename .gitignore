@@ -36,5 +36,3 @@ Thumbs.db
 alpineJustInstalled
 platform-tools/
 *.tar.gz
-mirrors/platform-tools/
-mirrors/alpine/*.tar.gz
