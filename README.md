@@ -94,6 +94,7 @@ Automatic installation of Alpine Linux 3.23.3 (aarch64) with:
 - Enable USB debugging on your device
 - Check USB cable connection
 - Try `adb devices` in terminal
+- If none helps and your device have Mediatek CPU try installing [this](https://mtkusballdriver.com/download/mtk-usb-v1-0-8)
 
 ### Alpine installation fails
 - Ensure device is rooted
